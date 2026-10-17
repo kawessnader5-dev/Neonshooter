@@ -11,33 +11,22 @@ jobs:
       - name: Get project
         uses: actions/checkout@v4
 
-      - name: Install build tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y git cmake ninja-build \
-            build-essential zip unzip
+      - name: Install Android tools
+        uses: android-actions/setup-android@v3
 
-      - name: Get raylib
-        run: |
-          git clone --depth 1 https://github.com/raysan5/raylib.git
-
-      - name: Build raylib
-        run: |
-          cmake -S raylib -B raylib/build \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DPLATFORM=Desktop \
-            -DCMAKE_BUILD_TYPE=Release
-          cmake --build raylib/build -j2
-
-      - name: Build game
-        run: |
-          g++ main.cpp -o NeonShooter \
-            -Iraylib/src \
-            raylib/build/raylib/libraylib.a \
-            -lGL -lm -lpthread -ldl -lrt -lX11
-
-      - name: Save game
-        uses: actions/upload-artifact@v4
+      - name: Install Java
+        uses: actions/setup-java@v4
         with:
-          name: NeonShooter
-          path: NeonShooter
+          distribution: temurin
+          java-version: '17'
+
+      - name: Get raylib Android template
+        run: |
+          git clone --depth 1 https://github.com/raylib-extras/raymob.git raymob
+
+      - name: Show project files
+        run: |
+          echo "Project files:"
+          ls -la
+          echo "Raymob template:"
+          ls -la raymob
