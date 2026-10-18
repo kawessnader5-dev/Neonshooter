@@ -11,22 +11,50 @@ jobs:
       - name: Get project
         uses: actions/checkout@v4
 
-      - name: Install Android tools
-        uses: android-actions/setup-android@v3
-
-      - name: Install Java
+      - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Get raylib Android template
-        run: |
-          git clone --depth 1 https://github.com/raylib-extras/raymob.git raymob
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Show project files
+      - name: Install Android dependencies
         run: |
-          echo "Project files:"
-          ls -la
-          echo "Raymob template:"
-          ls -la raymob
+          sdkmanager "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "ndk;27.0.12077973" \
+            "cmake;3.30.3"
+
+      - name: Get Android raylib template
+        run: |
+          git clone --recurse-submodules \
+            https://github.com/Bigfoot71/raymob.git raymob
+
+      - name: Add game source
+        run: |
+          test -f main.cpp
+          mkdir -p raymob/app/src/main/cpp
+          cp main.cpp raymob/app/src/main/cpp/main.cpp
+
+      - name: Configure application
+        working-directory: raymob
+        run: |
+          sed -i 's/^projectName=.*/projectName=NeonShooter/' gradle.properties
+          sed -i 's/^app.name=.*/app.name=NeonShooter/' gradle.properties
+          sed -i 's/^app.native_library_name=.*/app.native_library_name=neonshooter/' gradle.properties
+          sed -i 's/^app.application_id=.*/app.application_id=com.neonshooter.game/' gradle.properties
+
+      - name: Build APK
+        working-directory: raymob
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: NeonShooter-APK
+          path: raymob/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
